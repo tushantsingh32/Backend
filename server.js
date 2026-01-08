@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
@@ -17,11 +17,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /* ===============================
-   APP SETUP
+   APP SETUP (ONLY ONCE)
 ================================ */
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+/* ===============================
+   ROOT ROUTE (IMPORTANT)
+================================ */
+app.get("/", (req, res) => {
+  res.send("Backend is live 🚀");
+});
 
 /* ===============================
    UPLOAD SETUP
@@ -33,7 +40,7 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 app.use("/uploads", express.static(UPLOAD_DIR));
 
 /* ===============================
-   MULTER (SAFE)
+   MULTER
 ================================ */
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, UPLOAD_DIR),
@@ -45,15 +52,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_, file, cb) => {
     if (
       file.mimetype.startsWith("image/") ||
       file.mimetype === "application/pdf"
-    ) {
-      cb(null, true);
-    } else {
-      cb(null, false); // ❌ DO NOT throw error
-    }
+    ) cb(null, true);
+    else cb(null, false);
   }
 });
 
@@ -64,36 +68,36 @@ const USERS_FILE = path.join(__dirname, "users.json");
 const RECORDS_FILE = path.join(__dirname, "records.json");
 
 /* ===============================
-   HELPERS (CRITICAL FIX)
+   HELPERS
 ================================ */
-function loadJson(file) {
+const loadJson = file => {
   try {
-    const data = JSON.parse(fs.readFileSync(file, "utf8"));
-    return Array.isArray(data) ? data : [];
+    return JSON.parse(fs.readFileSync(file, "utf8"));
   } catch {
     return [];
   }
-}
+};
 
-function saveJson(file, data) {
+const saveJson = (file, data) =>
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
 
 /* ===============================
    JWT MIDDLEWARE
 ================================ */
-function verifyToken(req, res, next) {
+const verifyToken = (req, res, next) => {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ message: "No token" });
 
   try {
-    const token = auth.split(" ")[1];
-    req.user = jwt.verify(token, process.env.JWT_SECRET || "secret123");
+    req.user = jwt.verify(
+      auth.split(" ")[1],
+      process.env.JWT_SECRET || "secret123"
+    );
     next();
   } catch {
     res.status(401).json({ message: "Invalid token" });
   }
-}
+};
 
 const requireDoctor = (req, res, next) =>
   req.user.userType === "doctor"
@@ -106,22 +110,17 @@ const requirePatient = (req, res, next) =>
     : res.status(403).json({ message: "Patient only" });
 
 /* ===============================
-   AUTH
+   AUTH ROUTES
 ================================ */
 app.post("/api/signup", (req, res) => {
   const users = loadJson(USERS_FILE);
-
-  if (users.some(u => u.email === req.body.email)) {
+  if (users.some(u => u.email === req.body.email))
     return res.status(400).json({ message: "Email exists" });
-  }
 
   users.push({
     id: Date.now(),
-    userType: req.body.userType,
-    fullName: req.body.fullName,
-    email: req.body.email,
-    passwordHash: bcrypt.hashSync(req.body.password, 10),
-    aadhaarNumber: req.body.aadhaarNumber || null
+    ...req.body,
+    passwordHash: bcrypt.hashSync(req.body.password, 10)
   });
 
   saveJson(USERS_FILE, users);
@@ -132,9 +131,8 @@ app.post("/api/login", (req, res) => {
   const users = loadJson(USERS_FILE);
   const user = users.find(u => u.email === req.body.email);
 
-  if (!user || !bcrypt.compareSync(req.body.password, user.passwordHash)) {
+  if (!user || !bcrypt.compareSync(req.body.password, user.passwordHash))
     return res.status(401).json({ message: "Invalid credentials" });
-  }
 
   const token = jwt.sign(
     { email: user.email, userType: user.userType },
@@ -146,107 +144,13 @@ app.post("/api/login", (req, res) => {
 });
 
 /* ===============================
-   DOCTOR
+   START SERVER (ONLY ONCE)
 ================================ */
-app.get(
-  "/api/doctor/search/:aadhaar",
-  verifyToken,
-  requireDoctor,
-  (req, res) => {
-    const users = loadJson(USERS_FILE);
-    const patient = users.find(
-      u => u.userType === "patient" && u.aadhaarNumber === req.params.aadhaar
-    );
-
-    if (!patient) return res.status(404).json({ message: "Not found" });
-    res.json(patient);
-  }
-);
-
-app.post(
-  "/api/uploadRecord",
-  verifyToken,
-  requireDoctor,
-  upload.single("file"),
-  (req, res) => {
-    if (!req.file)
-      return res.status(400).json({ message: "No file uploaded" });
-
-    if (!req.body.patientEmail || !req.body.patientAadhaar)
-      return res.status(400).json({ message: "Missing patient data" });
-
-    const records = loadJson(RECORDS_FILE);
-
-    const record = {
-      id: Date.now(),
-      doctorEmail: req.user.email,
-      patientEmail: req.body.patientEmail,
-      patientAadhaar: req.body.patientAadhaar,
-      originalName: req.file.originalname,
-      fileUrl: `/uploads/${req.file.filename}`,
-      createdAt: new Date().toISOString()
-    };
-
-    records.push(record);
-    saveJson(RECORDS_FILE, records);
-
-    res.json({ status: "success", record });
-  }
-);
-
-/* ===============================
-   PATIENT
-================================ */
-app.get(
-  "/api/records/:email",
-  verifyToken,
-  requirePatient,
-  (req, res) => {
-    const records = loadJson(RECORDS_FILE).filter(
-      r => r.patientEmail === req.params.email
-    );
-    res.json({ records });
-  }
-);
-
-/* ===============================
-   START SERVER
-================================ */
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
   console.log(`Server running on port ${PORT}`)
 );
 
-
-
-
-
-
-/*deploy*/
-const express = require("express");
-const cors = require("cors");
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-// ✅ Root route (optional but recommended)
-app.get("/", (req, res) => {
-  res.send("Backend is live 🚀");
-});
-
-// ✅ API route (THIS FIXES YOUR ISSUE)
-app.get("/api", (req, res) => {
-  res.json({
-    message: "API is working successfully"
-  });
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
 
 
