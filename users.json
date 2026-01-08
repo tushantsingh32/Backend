@@ -72,5 +72,13 @@
     "email": "vansh@gmail.com",
     "passwordHash": "$2b$10$loSM5IelY6.M7YmGhOpddehjO7S5yd8j1t4PEhshQOQZ2v5UrvOAm",
     "aadhaarNumber": null
+  },
+  {
+    "id": 1767900334683,
+    "userType": "doctor",
+    "fullName": "Test Doctor",
+    "email": "doctor@test.com",
+    "passwordHash": "$2b$10$v/0fYJ7/C20/0yhNsl9KBeeHLUOhbB.3yCyczeJHHbuZBm7eAicvu",
+    "aadhaarNumber": null
   }
 ]
