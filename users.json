@@ -1,0 +1,76 @@
+[
+  {
+    "id": 1765047085829,
+    "userType": "patient",
+    "fullName": "golu",
+    "email": "golu@gmail.com",
+    "passwordHash": "$2b$10$fauHvx/jWNu9VwMqehzoYeWO0jCP8a4qmXA8LpuyySkzoJuiGv96m",
+    "aadhaarNumber": "8384843871",
+    "verified": true,
+    "createdAt": "2025-12-06T18:51:25.829Z"
+  },
+  {
+    "id": 1765047132938,
+    "userType": "doctor",
+    "fullName": "tushant",
+    "email": "tushant@gmail.com",
+    "passwordHash": "$2b$10$ciilSJxzubqwshRHbS3KsuwizWLjRsqxX4GYc61upZ8HSUzPESqyu",
+    "aadhaarNumber": null,
+    "verified": false,
+    "createdAt": "2025-12-06T18:52:12.938Z"
+  },
+  {
+    "id": 1765047636686,
+    "userType": "patient",
+    "fullName": "Ritesh",
+    "email": "ritesh@gmail.com",
+    "passwordHash": "$2b$10$LYvWKP1mypkopaIZmJMvVuaE9WfI7kApWQVgdEwJvmb.QZKU64qvO",
+    "aadhaarNumber": "8384843871",
+    "verified": true,
+    "createdAt": "2025-12-06T19:00:36.686Z"
+  },
+  {
+    "id": 1767875348672,
+    "userType": "patient",
+    "fullName": "vyas",
+    "email": "vyas677@gmail.com",
+    "passwordHash": "$2b$10$hCL.P.Zrn8mCE3JvposB7ul6Idgh1qKS91wnm7SSl2UU5gxl2KfK.",
+    "aadhaarNumber": "899989898989",
+    "verified": true,
+    "createdAt": "2026-01-08T12:29:08.672Z"
+  },
+  {
+    "id": 1767881611758,
+    "userType": "patient",
+    "fullName": "ram",
+    "email": "ram@gmail.com",
+    "passwordHash": "$2b$10$eYOEoH7qOrrI02Kvjj8dt.rGaysNR.ixrmqdWFKFwXYGDYj.thbYu",
+    "aadhaarNumber": "639666592211",
+    "createdAt": "2026-01-08T14:13:31.758Z"
+  },
+  {
+    "id": 1767881649114,
+    "userType": "doctor",
+    "fullName": "shyam",
+    "email": "shyam@gmail.com",
+    "passwordHash": "$2b$10$QbUEnb0N/ecWncx3poptYeSuF/2K2t1OvrHUTBqov4WLaWrOpwAmW",
+    "aadhaarNumber": null,
+    "createdAt": "2026-01-08T14:14:09.114Z"
+  },
+  {
+    "id": 1767885595486,
+    "userType": "patient",
+    "fullName": "ansh",
+    "email": "ansh@gmail.com",
+    "passwordHash": "$2b$10$9pnt6oTz7bwX8fgXT24tNePg3byLLlacru18ZmkF9c62zlIUzykXW",
+    "aadhaarNumber": "123456789012"
+  },
+  {
+    "id": 1767885623933,
+    "userType": "doctor",
+    "fullName": "vansh",
+    "email": "vansh@gmail.com",
+    "passwordHash": "$2b$10$loSM5IelY6.M7YmGhOpddehjO7S5yd8j1t4PEhshQOQZ2v5UrvOAm",
+    "aadhaarNumber": null
+  }
+]

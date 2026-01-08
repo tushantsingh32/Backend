@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1767883949764,
+    "doctorEmail": "shyam@gmail.com",
+    "patientEmail": "ram@gmail.com",
+    "patientAadhaar": "639666592211",
+    "originalName": "Screenshot 2025-12-06 213443.png",
+    "fileUrl": "/uploads/1767883949759-823015281.png",
+    "createdAt": "2026-01-08T14:52:29.764Z"
+  },
+  {
+    "id": 1767884003988,
+    "doctorEmail": "shyam@gmail.com",
+    "patientEmail": "ram@gmail.com",
+    "patientAadhaar": "639666592211",
+    "originalName": "Screenshot 2025-12-15 005440.png",
+    "fileUrl": "/uploads/1767884003984-731381688.png",
+    "createdAt": "2026-01-08T14:53:23.988Z"
+  },
+  {
+    "id": 1767884043001,
+    "doctorEmail": "shyam@gmail.com",
+    "patientEmail": "ram@gmail.com",
+    "patientAadhaar": "639666592211",
+    "originalName": "Screenshot 2025-12-16 140232.png",
+    "fileUrl": "/uploads/1767884042994-544078864.png",
+    "createdAt": "2026-01-08T14:54:03.001Z"
+  },
+  {
+    "id": 1767884907055,
+    "doctorEmail": "shyam@gmail.com",
+    "patientEmail": "ram@gmail.com",
+    "patientAadhaar": "639666592211",
+    "originalName": "Screenshot 2024-03-20 192525.png",
+    "fileUrl": "/uploads/1767884907050-886356994.png",
+    "createdAt": "2026-01-08T15:08:27.055Z"
+  },
+  {
+    "id": 1767885665582,
+    "doctorEmail": "vansh@gmail.com",
+    "patientEmail": "ansh@gmail.com",
+    "patientAadhaar": "123456789012",
+    "originalName": "Screenshot 2025-07-03 050652.png",
+    "fileUrl": "/uploads/1767885665576-169159722.png",
+    "createdAt": "2026-01-08T15:21:05.582Z"
+  }
+]

@@ -1,0 +1,189 @@
+﻿/**
+ * Enhanced server.js
+ * - Signup (with bcrypt hash)
+ * - Login (email + password)
+ * - File upload (multer) + optional IPFS via web3.storage
+ * - Records and pending verification management (records.json)
+ * - Simple storage in users.json & records.json
+ */
+
+require("dotenv").config();
+const express = require("express");
+const multer  = require("multer");
+const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+
+const { Web3Storage, File: W3File } = require("web3.storage");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+const UPLOAD_DIR = path.join(__dirname, "uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const upload = multer({ dest: UPLOAD_DIR });
+
+const USERS_FILE = path.join(__dirname, "users.json");
+const RECORDS_FILE = path.join(__dirname, "records.json");
+
+// helpers
+function loadJson(file) {
+  try {
+    const raw = fs.readFileSync(file, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+function saveJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+}
+
+// web3.storage (IPFS) client (optional)
+const WEB3_TOKEN = process.env.WEB3_STORAGE_TOKEN || "";
+let w3client = null;
+if (WEB3_TOKEN) {
+  w3client = new Web3Storage({ token: WEB3_TOKEN });
+  console.log("IPFS (web3.storage) enabled");
+} else {
+  console.log("IPFS not configured (set WEB3_STORAGE_TOKEN in .env to enable)");
+}
+
+// Signup: hash password, store user
+app.post("/api/signup", upload.single("file"), async (req, res) => {
+  try {
+    const { userType, fullName, email, password, aadhaarNumber } = req.body;
+    const file = req.file;
+    // simple validation
+    if (!email || !password || !fullName) {
+      return res.status(400).json({ status:"error", message: "Missing required fields" });
+    }
+    // load users
+    const users = loadJson(USERS_FILE);
+    if (users.find(u=>u.email === email)) {
+      return res.status(400).json({ status:"error", message:"Email already registered" });
+    }
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password, salt);
+
+    // prepare user object
+    const user = {
+      id: Date.now(),
+      userType,
+      fullName,
+      email,
+      passwordHash: hash,
+      aadhaarNumber: userType === "patient" ? aadhaarNumber : null,
+      createdAt: new Date().toISOString()
+    };
+
+    // store user
+    users.push(user);
+    saveJson(USERS_FILE, users);
+
+    // if file uploaded (doctor certificate or patient file)
+    let record = null;
+    if (file) {
+      // local path
+      const localPath = `/uploads/${file.filename}`;
+      // ipfs upload if configured
+      let ipfsCid = null;
+      try {
+        if (w3client) {
+          const buffer = fs.readFileSync(path.join(UPLOAD_DIR, file.filename));
+          const w3file = new W3File([buffer], file.originalname);
+          ipfsCid = await w3client.put([w3file], { wrapWithDirectory: false });
+        }
+      } catch (e) {
+        console.error("IPFS upload failed:", e);
+      }
+
+      // sha256
+      const buf = fs.readFileSync(path.join(UPLOAD_DIR, file.filename));
+      const shaHash = crypto.createHash("sha256").update(buf).digest("hex");
+
+      // record object (pending verification if doctor cert)
+      record = {
+        id: Date.now(),
+        userEmail: email,
+        userType,
+        originalName: file.originalname,
+        localPath,
+        ipfsCid,
+        shaHash,
+        verified: userType === "doctor" ? false : true,
+        createdAt: new Date().toISOString()
+      };
+
+      const records = loadJson(RECORDS_FILE);
+      records.push(record);
+      saveJson(RECORDS_FILE, records);
+    }
+
+    console.log("✅ New user saved:", { email, userType, fullName });
+    if (record) console.log("📁 Uploaded record saved:", { id: record.id, ipfsCid: record.ipfsCid });
+
+    return res.json({ status:"success", user: { email: user.email, userType: user.userType, fullName: user.fullName }, record });
+  } catch (err) {
+    console.error("Signup error:", err);
+    return res.status(500).json({ status:"error", message:"Server error" });
+  }
+});
+
+// Login: verify password
+app.post("/api/login", (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ status:"error", message:"Missing email or password" });
+    const users = loadJson(USERS_FILE);
+    const user = users.find(u => u.email === email);
+    if (!user) return res.status(401).json({ status:"error", message:"Invalid credentials" });
+    const ok = bcrypt.compareSync(password, user.passwordHash || "");
+    if (!ok) return res.status(401).json({ status:"error", message:"Invalid credentials" });
+    // return safe user info (no hash)
+    const safe = { id: user.id, email: user.email, fullName: user.fullName, userType: user.userType };
+    return res.json({ status:"success", user: safe });
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ status:"error", message:"Server error" });
+  }
+});
+
+// get all users (admin)
+app.get("/api/users", (req, res) => {
+  const users = loadJson(USERS_FILE).map(u => ({ id: u.id, email: u.email, fullName: u.fullName, userType: u.userType, createdAt: u.createdAt }));
+  res.json({ users });
+});
+
+// records listing
+app.get("/api/records", (req, res) => {
+  const records = loadJson(RECORDS_FILE);
+  res.json({ records });
+});
+
+// pending verifications (for doctor admin view)
+app.get("/api/pending", (req, res) => {
+  const records = loadJson(RECORDS_FILE).filter(r => !r.verified);
+  res.json({ pending: records });
+});
+
+// verify record (doctor action)
+app.post("/api/records/:id/verify", (req, res) => {
+  const id = Number(req.params.id);
+  const records = loadJson(RECORDS_FILE);
+  const idx = records.findIndex(r => r.id === id);
+  if (idx === -1) return res.status(404).json({ status:"error", message:"Record not found" });
+  records[idx].verified = true;
+  saveJson(RECORDS_FILE, records);
+  return res.json({ status:"success", record: records[idx] });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
