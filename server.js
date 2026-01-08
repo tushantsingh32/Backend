@@ -218,3 +218,35 @@ app.listen(PORT, () =>
 );
 
 
+
+
+
+
+/*deploy*/
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// ✅ Root route (optional but recommended)
+app.get("/", (req, res) => {
+  res.send("Backend is live 🚀");
+});
+
+// ✅ API route (THIS FIXES YOUR ISSUE)
+app.get("/api", (req, res) => {
+  res.json({
+    message: "API is working successfully"
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+
+
